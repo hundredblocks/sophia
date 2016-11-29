@@ -1,3 +1,4 @@
+import os
 from flask import Flask
 
 from parsing.parsing import get_reviews_from_url
@@ -8,6 +9,6 @@ app.register_blueprint(base_routes)
 
 
 if __name__ == "__main__":
-    app.run()
+    app.run(host=os.getenv('IP', '0.0.0.0'),port=int(os.getenv('PORT', 8080)))
     url = "https://www.yelp.com/biz/philz-coffee-san-mateo?osq=philz+san+mateo"
     get_reviews_from_url(url)
