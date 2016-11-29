@@ -1,8 +1,10 @@
 from bs4 import BeautifulSoup
 
+from storage.csv_storage import store_review_list, get_review_list
+
 
 def test_parsing():
-    with open("fixtures/yelp_page.html") as f:
+    with open("tests/fixtures/yelp_page.html") as f:
         doc = f.read()
     soup = BeautifulSoup(doc, 'html.parser')
     soup.find_all()
@@ -30,7 +32,16 @@ def test_parsing():
         review_dic["review_score"] = stars
         reviews.append(review_dic)
 
-    print(reviews)
+    # print(reviews)
+    return reviews
+
+
+def test_storage():
+    reviews = test_parsing()
+    url = "https://www.yelp.com/biz/philz-coffee-san-mateo"
+    store_review_list(reviews, url)
+    print(get_review_list(url))
 
 if __name__=="__main__":
-    test_parsing()
+    # test_parsing()
+    test_storage()

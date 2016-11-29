@@ -10,6 +10,6 @@ def index():
 
 @base_routes.route("/results")
 def display_results():
-    url = "https://www.yelp.com/biz/philz-coffee-san-mateo?osq=philz+san+mateo"
+    url = "https://www.yelp.com/biz/philz-coffee-san-mateo"
     get_reviews_from_url(url)
     return "These are the results"

@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+from storage.csv_storage import store_review_list
 
 
 # TODO iterate over pages
