@@ -1,3 +1,5 @@
-*.idea
+*.idea/*
 *.csv
 *.pyc
+*.iml
+**/__pycache__
