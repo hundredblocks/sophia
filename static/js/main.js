@@ -1,0 +1,5 @@
+$(function() {
+    $('#summarize').click(function() {
+
+    })
+});
