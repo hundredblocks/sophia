@@ -7,7 +7,7 @@ csv_path = "csv/"
 
 
 def store_review_list(review_list, review_url):
-    filename = review_url.split("/")[4]
+    filename = review_url.split("/")[-1]
     file_path = csv_path + filename + ".csv"
     l = [r.as_dict() for r in review_list]
     df = pd.DataFrame.from_dict(l)
@@ -21,7 +21,7 @@ def store_review_list(review_list, review_url):
 
 
 def get_review_list(review_url):
-    filename = review_url.split("/")[4]
+    filename = review_url.split("/")[-1]
     file_path = csv_path + filename + ".csv"
     df = pd.DataFrame.from_csv(file_path)
     csv_dict = df.to_dict()
