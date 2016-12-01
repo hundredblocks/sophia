@@ -14,5 +14,4 @@ def index():
 def display_results():
     url = request.form['reviewUrl']
     reviews = get_reviews_from_url(url)
-    store_review_list(reviews, url)
     return render_template('summary.html', rating=4, total=len(reviews), summary="None")

@@ -10,5 +10,3 @@ app.register_blueprint(base_routes)
 
 if __name__ == "__main__":
     app.run(host=os.getenv('IP', '0.0.0.0'),port=int(os.getenv('PORT', 8080)))
-    url = "https://www.yelp.com/biz/philz-coffee-san-mateo"
-    get_reviews_from_url(url)

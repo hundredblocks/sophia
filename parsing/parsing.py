@@ -7,18 +7,21 @@ from bs4 import BeautifulSoup
 from multiprocessing import Pool
 from storage.csv_storage import store_review_list, get_review_list
 
-# TODO iterate over pages
 def get_reviews_from_url(url):
-    info = _get_review_info(url)
-    pages = [_get_review_url_for_page(url, page) for page in range(1, _get_number_of_pages(info.get('count', 0)))]
+    try:
+        return get_review_list(url)
+    except OSError:
+        info = _get_review_info(url)
+        pages = [_get_review_url_for_page(url, page) for page in range(1, _get_number_of_pages(info.get('count', 0)))]
 
-    with Pool(20) as p:
-        all_reviews_info = p.map(_get_review_info, pages)
-        all_reviews_info.append(info)
-        reviews = reduce(lambda acc, i: i.get('reviews', []) + acc, all_reviews_info, [])
+        with Pool(20) as p:
+            all_reviews_info = p.map(_get_review_info, pages)
+            all_reviews_info.append(info)
+            reviews = reduce(lambda acc, i: i.get('reviews', []) + acc, all_reviews_info, [])
 
-    store_review_list(reviews, url)
-    return reviews
+        store_review_list(reviews, url)
+        return reviews
+
 
 # Private functions
 
