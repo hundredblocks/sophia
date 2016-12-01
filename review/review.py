@@ -1,8 +1,7 @@
 class Review:
 
-    review = {}
-
     def __init__(self, **kwargs):
+        self.review = {}
         self._parse_yelp_review(kwargs.get('yelp'))
 
     def rating(self):
@@ -18,7 +17,6 @@ class Review:
         return self.review
 
     # Private methods
-    @classmethod
     def _parse_yelp_review(self, yelp_json):
         self.review['rating'] = yelp_json['reviewRating']['ratingValue']
         self.review['date_ublished'] = yelp_json['datePublished']
