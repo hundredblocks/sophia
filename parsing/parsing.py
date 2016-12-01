@@ -35,10 +35,7 @@ def get_reviews_from_url(url):
         store_review_list(reviews, url)
         return reviews
 
-
 # Private functions
-
-
 def _get_number_of_pages(review_count, per_page):
     return math.ceil(review_count / per_page)
 
