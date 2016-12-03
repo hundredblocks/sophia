@@ -1,31 +1,41 @@
 import rethinkdb as r
-
-from review.review import Review
-
-
-db_name = 'sophia'
-table_name = 'summary'
+import config.config as c
+import re
 
 
-def save(key, summary):
-    doc = {
-        'key': key,
-        'words': summary.get('words', []),
-        'review_count': summary.get('review_count', 0),
-        'reviews': [review.as_dict() for review in summary.get('reviews', [])],
-        'date_created': r.now()
-    }
-    r.db(db_name).table(table_name).insert(doc).run(r.connect('localhost', 28015))
+class StoreDb:
 
-
-def get(key):
-    cursor = r.db(db_name).table(table_name).filter(r.row['key'] == key).run(r.connect('localhost', 28015))
-    summary = {'words': [], 'count': 0}
-    try:
-        results = cursor.next()
-        summary = results
-        summary['reviews'] = [Review(raw_review=review) for review in summary.get('reviews', [])]
-    except r.ReqlCursorEmpty:
+    def __init__(self):
         pass
 
-    return summary
+    def save(self, doc):
+        if doc.get('date_created', None) is None:
+            doc['date_created'] = r.now()
+
+        r.db(c.config['db']['name'])\
+            .table(self._sanitize(self.__class__.__name__))\
+            .insert(doc)\
+            .run(r.connect(c.config['db']['host'], c.config['db']['port']))
+
+    def get(self, key):
+        cursor = r.db(c.config['db']['name'])\
+            .table(self._sanitize(self.__class__.__name__))\
+            .filter(r.row['key'] == key)\
+            .run(r.connect(c.config['db']['host'], c.config['db']['port']))
+        doc = None
+        try:
+            raw_doc = cursor.next()
+            doc = self._parse(raw_doc)
+        except r.ReqlCursorEmpty:
+            pass
+
+        return doc
+
+    @staticmethod
+    def _parse(raw_doc):
+        return raw_doc
+
+    @staticmethod
+    def _sanitize(name):
+        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()

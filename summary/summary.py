@@ -1,15 +1,22 @@
 from parsing.parsing import get_reviews_from_url
 from extractor.feature_extractor import extract
-from storage.rethinkdb_storage import save, get
+from storage.rethinkdb_storage import StoreDb
+from review.review import Review
 
-class Summary:
+
+class Summary(StoreDb):
 
     def __init__(self, key):
-        summary = get(key)
-        if len(summary['words']) == 0:
+        super().__init__()
+
+        self.key = key
+        summary = self.get(key)
+        if summary is None:
             reviews = get_reviews_from_url(key)
             summary = extract(reviews, 100)
-            save(key, summary)
+            summary['key'] = key
+            summary['reviews'] = [review.as_dict() for review in reviews]
+            self.save(summary)
 
         self._summary = summary
 
@@ -36,3 +43,8 @@ class Summary:
     def _percent(self, l):
         l['median_positivity'] = int(round(l['median_positivity'] * 100, 0))
         return l
+
+    @staticmethod
+    def _parse(raw_doc):
+        raw_doc['reviews'] = [Review(raw_review=review) for review in raw_doc.get('reviews', [])]
+        return raw_doc
