@@ -1,14 +1,16 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h1 class="cover-heading">Summarize Reviews</h1>
-<p class="lead">
-<form action="/summary" method="post">
-    <div class="form-group">
-        <input type="text" class="form-control" id="reviewUrl" name="reviewUrl" placeholder="Yelp Url">
-    </div>
-    <button id="summarize" type="submit" class="btn btn-lg btn-default">Summarize</button>
-</form>
-</p>
+<div class="row">
+<h3 class="text-center">Summarize Reviews</h3>
 </div>
+
+<form action="/summary" method="post">
+    <div class="row">
+        <input type="text" id="reviewUrl" name="reviewUrl" placeholder="Yelp Url">
+    </div>
+    <div class="row">
+        <button id="summarize" type="submit" class="expanded button">Summarize</button>
+    </div>
+</form>
 {% endblock %}

@@ -17,5 +17,6 @@ def display_results():
     return render_template('summary.html',
                            rating=summary.rating(),
                            total=summary.review_count(),
-                           words=summary.words(),
+                           negative_words=summary.negative_words(),
+                           positive_words=summary.positive_words(),
                            summary=summary.text())

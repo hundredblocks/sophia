@@ -2,20 +2,34 @@
 
 {% block content %}
 <div class="info">
-    <p>Rating of {{ rating }} based on {{ total }} reviews</p>
+    <h4>Rating of {{ rating }} based on {{ total }} reviews</h4>
 </div>
-<div class="summary">
+
+<div class="progress">
+    <div class="progress-meter" style="width: 100%"></div>
+</div>
+
+<div class="summary callout">
     <h2>Summary:</h2>
     <p>{{ summary }}</p>
 </div>
 <div class="words">
-    <table class="summary-words">
-        {% for word in words %}
-        <tr>
-            <td>{{ word['word'] }}</td>
-            <td>{{ word['median_positivity'] }}%</td>
-        </tr>
+
+    <div class="words-list negative-words callout alert float-left">
+        <h5>Negative Words</h5>
+        <dl>
+            {% for word in negative_words %}
+                {% include "components/word.html" %}
+            {% endfor %}
+        </dl>
+    </div>
+
+    <div class="words-list positive-words callout success float-right">
+        <h5>Positive Words</h5>
+        {% for word in positive_words %}
+            {% include "components/word.html" %}
         {% endfor %}
-    </table>
+    </div>
+
 </div>
 {% endblock %}

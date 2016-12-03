@@ -14,8 +14,15 @@ class Summary:
         self._summary = summary
 
     def words(self):
-        words_list = [w for w in self._summary['words'] if w['median_positivity'] != 0]
-        return map(self._percent, words_list)
+        return [self._percent(w) for w in self._summary['words'] if w['median_positivity'] != 0]
+
+    def negative_words(self, number=3):
+        words_list = [self._percent(w) for w in self._summary['words'] if w['median_positivity'] < 0]
+        return words_list[:number]
+
+    def positive_words(self, number=3):
+        words_list = [self._percent(w) for w in self._summary['words'] if w['median_positivity'] > 0]
+        return words_list[:number]
 
     def review_count(self):
         return self._summary['review_count']
