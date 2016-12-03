@@ -4,21 +4,17 @@ import numpy as np
 import pandas as pd
 import collections
 from nltk.sentiment import SentimentIntensityAnalyzer
-from storage.csv_storage import get_review_list
-# from nltk import tokenize
 import nltk
 
 
-
-def extract(url, num_reviews):
-    rev = get_review_list(url)
+def extract(reviews, num_reviews):
     sid = nltk.sentiment.SentimentIntensityAnalyzer()
     comp_array = []
     word_dic = collections.defaultdict(list)
     print("analyzing reviews: %s" % datetime.datetime.now())
-    print(len(rev))
-    num_reviews = min(num_reviews, len(rev))
-    for review in rev[0:num_reviews]:
+    print(len(reviews))
+    num_reviews = min(num_reviews, len(reviews))
+    for review in reviews[0:num_reviews]:
         rev_text = review.description()
         # print(rev_text)
         lines_list = nltk.tokenize.sent_tokenize(rev_text)
@@ -60,7 +56,13 @@ def extract(url, num_reviews):
     for val in set(frequent_words.type.values):
         print(val)
         print(frequent_words[frequent_words["type"] == val])
-    # print(b[b["count"]>10])
+
+    sel = frequent_words[frequent_words["type"] == "JJ"]
+    words = sel.to_dict("records")
+
+    summary = {'words': words, 'review_count': len(reviews), 'reviews': reviews}
+    return summary
+
 
 if __name__ == "__main__":
     test_url = "https://www.yelp.com/biz/farina-pizza-and-cucina-italiana-san-francisco"

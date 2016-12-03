@@ -15,8 +15,10 @@ def test_amazon_parsing():
     reviews = _get_review_info_amazon(url)
     print(reviews)
 
+
 if __name__=="__main__":
     url = "https://www.yelp.com/biz/rickhouse-san-francisco"
     review_list = get_reviews_from_url(url)
     b = get_review_list(url)
     print(len(b))
+

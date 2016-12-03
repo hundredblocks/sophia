@@ -6,8 +6,16 @@
 </div>
 <div class="summary">
     <h2>Summary:</h2>
-    <p class="summary">
-        {{ summary }}
-    </p>
+    <p>{{ summary }}</p>
+</div>
+<div class="words">
+    <table class="summary-words">
+        {% for word in words %}
+        <tr>
+            <td>{{ word['word'] }}</td>
+            <td>{{ word['median_positivity'] }}%</td>
+        </tr>
+        {% endfor %}
+    </table>
 </div>
 {% endblock %}
