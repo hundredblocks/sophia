@@ -12,5 +12,5 @@ app.register_blueprint(base_routes)
 
 if __name__ == "__main__":
     c.load()
-    socketio.init_app(app)
+    socketio.init_app(app, async_mode='threading')
     socketio.run(app, host=c.config['web']['ip'], port=c.config['web']['port'])

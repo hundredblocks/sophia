@@ -6,14 +6,20 @@ from review.review import Review
 
 class Summary(StoreDb):
 
-    def __init__(self, key):
+    def __init__(self, key, **kwargs):
         super().__init__()
 
         self.key = key
         summary = self.get(key)
         if summary is None:
-            reviews = get_reviews_from_url(key)
-            summary = extract(reviews, 100)
+            reviews = kwargs.get('reviews', None)
+            if reviews is None:
+                reviews = get_reviews_from_url(key)
+
+            summary = kwargs.get('summary', None)
+            if summary is None:
+                summary = extract(reviews, 100)
+
             summary['key'] = key
             summary['reviews'] = [review.as_dict() for review in reviews]
             self.save(summary)

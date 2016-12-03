@@ -4,14 +4,17 @@ socket.on('connect', function() {
     socket.on('message', function(msg) {
         var data = JSON.parse(msg);
         var summary = data.summary;
-        console.log(data)
+        console.log(data);
 
         updateProgress(data.progress);
-        updateRating(summary.rating);
-        updateTotalReviews(summary.review_count);
-        updateSummaryText(summary.text);
-        updateWords('negative-words', summary.negative_words);
-        updateWords('positive-words', summary.positive_words)
+
+        if (summary) {
+            updateRating(summary.rating);
+            updateTotalReviews(summary.review_count);
+            updateSummaryText(summary.text);
+            updateWords('negative-words', summary.negative_words);
+            updateWords('positive-words', summary.positive_words);
+        }
     });
 });
 
