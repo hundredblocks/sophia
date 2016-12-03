@@ -11,6 +11,11 @@ def index():
 
 
 @base_routes.route('/summary', methods=['POST'])
+def summary():
+    return render_template('socket_summary.html', url=request.form['reviewUrl'])
+
+
+@base_routes.route('/api/summary', methods=['POST'])
 def display_results():
     url = request.form['reviewUrl']
     summary = Summary(url)
@@ -20,3 +25,5 @@ def display_results():
                            negative_words=summary.negative_words(),
                            positive_words=summary.positive_words(),
                            summary=summary.text())
+
+

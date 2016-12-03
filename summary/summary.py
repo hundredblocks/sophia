@@ -40,9 +40,20 @@ class Summary(StoreDb):
     def rating(self):
         return 4
 
+    def to_dict(self):
+        return {
+            'words': self.words(),
+            'negative_words': self.negative_words(),
+            'positive_words': self.positive_words(),
+            'review_count': self.review_count(),
+            'text': self.text(),
+            'rating': self.rating()
+        }
+
     def _percent(self, l):
-        l['median_positivity'] = int(round(l['median_positivity'] * 100, 0))
-        return l
+        newL = dict(l)
+        newL['median_positivity'] = int(round(l['median_positivity'] * 100, 0))
+        return newL
 
     @staticmethod
     def _parse(raw_doc):

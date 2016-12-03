@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="info">
+    <h3>{{ url }}</h3>
+    <h4>Rating of <span id="summary-rating">-</span> based on <span id="summary-total-reviews">-</span> reviews</h4>
+</div>
+
+<div class="progress">
+    <div id="summary-progress" class="progress-meter"></div>
+</div>
+
+<div class="summary callout">
+    <h2>Summary:</h2>
+    <p id="summary-text">...</p>
+</div>
+<div class="words">
+
+    <div class="words-list callout alert float-left">
+        <h5>Negative Words</h5>
+        <div id="negative-words"></div>
+    </div>
+
+    <div class="words-list callout success float-right">
+        <h5>Positive Words</h5>
+        <div id="positive-words"></div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block defer %}
+<script>
+    var url = "{{ url }}"
+</script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+<script type="text/javascript" src="static/js/main.js"></script>
+{% endblock %}
