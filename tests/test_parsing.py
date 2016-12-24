@@ -92,8 +92,12 @@ def test_word2vec_onlywords(reviews, model=None):
 
 def test_word2vec(reviews, model=None):
     reviews_text = [r.review['description'] for r in reviews]
+    # reviews_text = [[r.review['description'], r.review["rating"]] for r in reviews]
     rev_nested = [nltk.tokenize.sent_tokenize(review_text) for review_text in reviews_text]
     lines_list = [line for rev_lines in rev_nested for line in rev_lines]
+    # TODO faster
+    line_to_rev = [[line, i] for i, rev_lines in enumerate(rev_nested) for line in rev_lines]
+    total_reviews = len(reviews_text)
     print(len(reviews_text), len(rev_nested), len(lines_list))
     alldocs = []
     tokenizer = nltk.RegexpTokenizer(r'\w+')
@@ -136,61 +140,101 @@ def test_word2vec(reviews, model=None):
             sent_vector = total_sent_vector/total_weights
             # TODO remove .1?
             # sent_vector_with_pol = np.append(sent_vector, .1*line_scores[map_vec_to_str[i]])
-            sent_vector_with_pol = np.append(sent_vector, line_scores[map_vec_to_str[i]])
-            sent_vectors.append(sent_vector_with_pol)
+            sent_vector_with_pol = np.append(sent_vector, line_scores[j])
+            rev_index = line_to_rev[j][1]
+            sent_vector_with_pol_and_rev = np.append(sent_vector_with_pol, reviews[rev_index].review["rating"])
+            sent_vectors.append(sent_vector_with_pol_and_rev)
+            # sent_vectors.append(sent_vector_with_pol)
             i += 1
 
     logging.info("vectors retrieved, from %s to %s" % (len(alldocs), len(sent_vectors)))
 
-    # X_tsne = TSNE().fit_transform(sent_vectors)
-    # logging.info("TSNE done")
+    X_tsne = TSNE().fit_transform(sent_vectors)
+    logging.info("TSNE done")
 
-    n_c = 10
-    number_clusters = [10,15,20,50]
+    n_c = 20
+    # number_clusters = [10,15,20,50]
     results_dict = {}
-    for n_c in number_clusters:
-        print("NUMBER CLUSTERS", n_c)
-        km = KMeans(n_clusters=n_c, init='k-means++', max_iter=100)
-        km.fit(sent_vectors)
-        # figure(figsize=(10, 5))
-        # scatter(X_tsne[:, 0], X_tsne[:, 1], c=km.labels_, alpha=0.5)
-        logging.info("Clustered")
-        word_counter = collections.Counter()
-        cluster_config_arr = []
-        for cluster in range(n_c):
-            member_idexes = [memb[0] for memb in enumerate(km.labels_) if memb[1] == cluster]
-            size_perc = 100 * len(member_idexes) / len(km.labels_)
-            # print("Cluster %s: %s percent" % (cluster, size_perc))
-            # chosen_examples = sample(member_idexes, min(10, len(member_idexes)))
-            cluster_counter = collections.Counter()
-            translated_indexes = [map_vec_to_str[a] for a in member_idexes]
-            sentences_indexed = [[map_vec_to_str[tr_i],sent_vectors[tr_i]] for tr_i in member_idexes]
-            closest_idx = closest_to_barycenter(sentences_indexed, n=5)
-            # if len(closest_idx) > 0:
-                # closest_real = [map_vec_to_str[min_i] for min_i in closest_idx]
-                # print("INDEXES", closest_real)
-                # print("CLOSEST", [lines_list[c] for c in closest_idx])
-            for ind in translated_indexes:
-                cluster_counter.update(alldocs[ind])
-                word_counter.update(alldocs[ind])
-                # if ind in chosen_examples:
-                # if ind in member_idexes:
-                    # print(lines_list[map_vec_to_str[ind]])
-                # print(lines_list[ind])
-            cluster_res = {
-                "CLOSEST": [lines_list[c] for c in closest_idx] if len(closest_idx)>0 else 0,
-                "MOST COMMON": cluster_counter.most_common(20),
-                "NUM": cluster,
-                "PERC": size_perc
-            }
-            cluster_config_arr.append(cluster_res)
-            # print(cluster_counter.most_common(20))
-        # print(word_counter.most_common(20))
-        sorted_result = sorted(cluster_config_arr, key=lambda x: x["PERC"], reverse=True)
-        print("RESULTS")
-        print(sorted_result)
-        results_dict[n_c] = cluster_config_arr
-    # print(results_dict)
+    # for n_c in number_clusters:
+    print("NUMBER CLUSTERS", n_c)
+    km = KMeans(n_clusters=n_c, init='k-means++', max_iter=100)
+    km.fit(sent_vectors)
+    figure(figsize=(10, 5))
+    scatter(X_tsne[:, 0], X_tsne[:, 1], c=km.labels_, alpha=0.5)
+    logging.info("Clustered")
+    word_counter = collections.Counter()
+    cluster_config_arr = []
+    for cluster in range(n_c):
+        member_indexes = [memb[0] for memb in enumerate(km.labels_) if memb[1] == cluster]
+        size_num =  len(member_indexes)
+        size_perc = 100 * len(member_indexes) / len(km.labels_)
+        cluster_counter = collections.Counter()
+        translated_indexes = [map_vec_to_str[a] for a in member_indexes]
+
+        review_indexes = [line_to_rev[a][1] for a in translated_indexes]
+        num_reviews = len(set(review_indexes))
+        perc_reviews = 100 * len(set(review_indexes)) / total_reviews
+
+        sentences_indexed = [[map_vec_to_str[tr_i], sent_vectors[tr_i]] for tr_i in member_indexes]
+        closest_idx = closest_to_barycenter(sentences_indexed, n=5)
+        # median_positivity = np.median([a[1][-2] for a in sentences_indexed])
+        avg_positivity = np.average([a[1][-2] for a in sentences_indexed])
+        for ind in translated_indexes:
+            cluster_counter.update([w for w in alldocs[ind] if w not in en_stop and len(w) > 1])
+            word_counter.update([w for w in alldocs[ind] if w not in en_stop and len(w) > 1])
+
+        cluster_res = {
+            "CLOSEST": [lines_list[c] for c in closest_idx] if len(closest_idx)>0 else 0,
+            "MOST COMMON": cluster_counter.most_common(10),
+            # "MOST COMMON_MOD": most_common_uncommon(cluster_counter, tfidf_scores, n=20),
+            # "NUM": cluster,
+            "cluster_counter": cluster_counter,
+            "PERC_SENT": size_perc,
+            "NUM_SENT": size_num,
+            "PERC_REV": perc_reviews,
+            "NUM_REV": num_reviews,
+            # "POS_MED": median_positivity,
+            "POS_AVG": avg_positivity
+        }
+        cluster_config_arr.append(cluster_res)
+    sorted_result = sorted(cluster_config_arr, key=lambda x: x["PERC_SENT"], reverse=True)
+    groom_counters(sorted_result)
+    print("RESULTS")
+    print(sorted_result)
+
+
+def groom_counters(cluster_arr):
+    glob_count = collections.Counter()
+    for c in cluster_arr:
+        count = c["cluster_counter"]
+        glob_count.update(count)
+    avg_count = collections.Counter()
+    per_sent_freq = {}
+    total_sentences = sum([a["NUM_SENT"] for a in cluster_arr])
+    n_c = len(cluster_arr)
+    for key, val in glob_count.items():
+        avg_count[key] = int(val/n_c)
+        per_sent_freq[key] = float(val/total_sentences)
+
+    for i, clus in enumerate(cluster_arr):
+        count = clus["cluster_counter"]
+        # count.subtract(avg_count)
+
+        scaled_counts = collections.Counter()
+        num_sentences = clus["NUM_SENT"]
+        for key, val in per_sent_freq.items():
+            scaled_counts[key] = int(val*num_sentences)
+        count.subtract(scaled_counts)
+
+        clus["GROOMED"] = [val[0] for val in count.most_common(10) if val[1] != 0]
+
+    for cl in cluster_arr:
+        del cl["cluster_counter"]
+
+
+def most_common_uncommon(count: collections.Counter, tf_idf_model, n=20):
+    srted = sorted([[a, count[a]*tf_idf_model[a]] for a in count.keys()], key=lambda x: x[1], reverse=True)
+    return srted[0:min(len(count.keys()), n)]
 
 
 def closest_to_barycenter(sentences, n=5):
@@ -211,7 +255,9 @@ def closest_to_barycenter(sentences, n=5):
             a = mini.index(max(mini))
             mini[a] = distance
             idxs[a] = sent[0]
-    return idxs
+    sorted_idxs = sorted([[a, b] for a, b in zip(idxs, mini)], key= lambda x: x[1])
+    return [a[0] for a in sorted_idxs]
+
 
 def test_doc2vec(reviews):
     reviews_text = [r.review['description'] for r in reviews]
@@ -344,7 +390,7 @@ if __name__=="__main__":
     # test_doc2vec(get_reviews_from_url(urls[5]))
 
     model=gensim.models.Word2Vec.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
-    # for i in range(6):
+    # for i in range(8):
     #     test_word2vec(get_reviews_from_url(urls[i]), model=model)
     test_word2vec(get_reviews_from_url(urls[-1]), model=model)
     # test_ml(big_list)
