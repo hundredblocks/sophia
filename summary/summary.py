@@ -1,5 +1,4 @@
 from parsing.parsing import get_reviews_from_url
-from extractor.feature_extractor import extract
 from storage.rethinkdb_storage import StoreDb
 from review.review import Review
 

@@ -1,4 +1,3 @@
-import config.config as c
 from flask import Flask
 from routes.sockets import socketio
 

@@ -1,5 +1,7 @@
 *.idea/*
 *.csv
-*.pyc
+**/*.pyc
+**/*.DS_Store
 *.iml
 **/__pycache__
+models/

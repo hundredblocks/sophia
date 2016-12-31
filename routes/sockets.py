@@ -3,7 +3,6 @@ from flask_socketio import SocketIO, send
 import eventlet
 
 from parsing.parsing import get_reviews_from_url
-from extractor.feature_extractor import extract
 from summary.summary import Summary
 
 socketio = SocketIO()

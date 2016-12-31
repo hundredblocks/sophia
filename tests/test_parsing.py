@@ -4,9 +4,12 @@ import numpy as np
 
 import collections
 import matplotlib.pyplot as plt
+# from flask import json
+import json
 from gensim.models.doc2vec import TaggedDocument
 from matplotlib.pyplot import figure, subplot, scatter
 from sklearn.cluster import KMeans, DBSCAN
+from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 
 import gensim
@@ -134,12 +137,9 @@ def test_word2vec(reviews, model=None):
     for j, sent in enumerate(alldocs):
         total_sent_vector = sum([model[word]*tfidf_scores[word] for word in sent if word in model.vocab])
         if not isinstance(total_sent_vector, int):
-            # total_weights = sum([tfidf_scores[word] for word in sent if word in model.vocab])
             map_vec_to_str[i] = j
             total_weights = len([word for word in sent if word in model.vocab])
             sent_vector = total_sent_vector/total_weights
-            # TODO remove .1?
-            # sent_vector_with_pol = np.append(sent_vector, .1*line_scores[map_vec_to_str[i]])
             sent_vector_with_pol = np.append(sent_vector, line_scores[j])
             rev_index = line_to_rev[j][1]
             sent_vector_with_pol_and_rev = np.append(sent_vector_with_pol, reviews[rev_index].review["rating"])
@@ -149,8 +149,12 @@ def test_word2vec(reviews, model=None):
 
     logging.info("vectors retrieved, from %s to %s" % (len(alldocs), len(sent_vectors)))
 
-    X_tsne = TSNE().fit_transform(sent_vectors)
-    logging.info("TSNE done")
+    # pcad = PCA(n_components=50).fit_transform(sent_vectors)
+    # X_tsne = TSNE().fit_transform(pcad)
+    # X_tsne = TSNE().fit_transform(sent_vectors)
+    # tsne = TSNE()
+    # X_tsne = tsne.fit_transform([s[-2:] for s in sent_vectors])
+    # logging.info("TSNE done")
 
     n_c = 20
     # number_clusters = [10,15,20,50]
@@ -159,8 +163,8 @@ def test_word2vec(reviews, model=None):
     print("NUMBER CLUSTERS", n_c)
     km = KMeans(n_clusters=n_c, init='k-means++', max_iter=100)
     km.fit(sent_vectors)
-    figure(figsize=(10, 5))
-    scatter(X_tsne[:, 0], X_tsne[:, 1], c=km.labels_, alpha=0.5)
+    # figure(figsize=(10, 5))
+    # scatter(X_tsne[:, 0], X_tsne[:, 1], c=km.labels_, alpha=0.5)
     logging.info("Clustered")
     word_counter = collections.Counter()
     cluster_config_arr = []
@@ -177,30 +181,93 @@ def test_word2vec(reviews, model=None):
 
         sentences_indexed = [[map_vec_to_str[tr_i], sent_vectors[tr_i]] for tr_i in member_indexes]
         closest_idx = closest_to_barycenter(sentences_indexed, n=5)
-        # median_positivity = np.median([a[1][-2] for a in sentences_indexed])
         avg_positivity = np.average([a[1][-2] for a in sentences_indexed])
         for ind in translated_indexes:
             cluster_counter.update([w for w in alldocs[ind] if w not in en_stop and len(w) > 1])
             word_counter.update([w for w in alldocs[ind] if w not in en_stop and len(w) > 1])
 
         cluster_res = {
-            "CLOSEST": [lines_list[c] for c in closest_idx] if len(closest_idx)>0 else 0,
+            "CLOSEST": [lines_list[c] for c in closest_idx] if len(closest_idx) > 0 else 0,
             "MOST COMMON": cluster_counter.most_common(10),
-            # "MOST COMMON_MOD": most_common_uncommon(cluster_counter, tfidf_scores, n=20),
-            # "NUM": cluster,
+            "ID": cluster,
             "cluster_counter": cluster_counter,
-            "PERC_SENT": size_perc,
+            "sentences": [lines_list[ind] for ind in translated_indexes],
             "NUM_SENT": size_num,
+            "PERC_SENT": size_perc,
             "PERC_REV": perc_reviews,
             "NUM_REV": num_reviews,
-            # "POS_MED": median_positivity,
             "POS_AVG": avg_positivity
         }
         cluster_config_arr.append(cluster_res)
     sorted_result = sorted(cluster_config_arr, key=lambda x: x["PERC_SENT"], reverse=True)
+
+    # In the response we send cluster_id, groomed_words, positivity, num_reviews, perc_rev and one/two sentences
     groom_counters(sorted_result)
+    pick_sentences(sorted_result, n=5)
+    clean = clean_clusters(sorted_result)
+
     print("RESULTS")
-    print(sorted_result)
+    print(clean)
+    # sorted_escaped = [escaped(a) for a in sorted_result]
+    a = json.dumps(clean)
+    print(a)
+    # escaped = a.replace("'", "")
+    # escaped = escaped.replace("\n", "")
+    # escaped = escaped.replace("\"", "-")
+    # print(escaped)
+    return a
+
+# def escaped(dic):
+#     escaped_dic = {}
+#     for key, value in dic.items():
+#         escaped_dic[escaped_str(key)] = esca
+
+
+def clean_clusters(cluster_arr):
+    new_clus_arr = []
+    for clus in cluster_arr:
+        new_clus = {
+            # "CLOSEST": [lines_list[c] for c in closest_idx] if len(closest_idx) > 0 else 0,
+            # "MOST COMMON": cluster_counter.most_common(10),
+            "ID": clus["ID"],
+            # "cluster_counter": cluster_counter,
+            # "sentences": [alldocs[ind] for ind in translated_indexes],
+            "NUM_SENT": clus["NUM_SENT"],
+            "PERC_REV": clus["PERC_REV"],
+            "NUM_REV": clus["NUM_REV"],
+            "POS_AVG": clus["POS_AVG"],
+            "GROOMED": clus["GROOMED"],
+            "groom": clus["groom"],
+            "CHOSEN": clus["CHOSEN"]
+        }
+        new_clus_arr.append(new_clus)
+    return new_clus_arr
+
+
+def pick_sentences(cluster_arr, n=2):
+    tokenizer = nltk.RegexpTokenizer(r'\w+')
+    for clust in cluster_arr:
+        sent_scores = []
+        sents = clust["sentences"]
+        # words = clust["GROOMED"]
+        words_with_counts = clust["groom"]
+        # points_dic = {w: len(words) - i for i, w in enumerate(words)}
+        points_dic = {w: c for w, c in words_with_counts}
+        for i, sen in enumerate(sents):
+            sen_split = tokenizer.tokenize(sen)
+            # wor = [1 for word in sen_split if word in points_dic]
+            wor = [points_dic[word] for word in sen_split if word in points_dic]
+            counter = sum(wor)
+            sent_scores.append([i, counter])
+        sorted_scores = sorted(sent_scores, key=lambda x: x[1], reverse=True)
+        to_choose = min(len(sorted_scores), n)
+        chosen_sents = []
+        for i, count in sorted_scores[0:to_choose]:
+            clean = sents[i].replace("'", "")
+            clean = clean.replace("\n", "")
+            clean = clean.replace("\"", "-")
+            chosen_sents.append(clean)
+        clust["CHOSEN"] = chosen_sents
 
 
 def groom_counters(cluster_arr):
@@ -227,6 +294,7 @@ def groom_counters(cluster_arr):
         count.subtract(scaled_counts)
 
         clus["GROOMED"] = [val[0] for val in count.most_common(10) if val[1] != 0]
+        clus["groom"] = [val for val in count.most_common(10) if val[1] != 0]
 
     for cl in cluster_arr:
         del cl["cluster_counter"]
@@ -370,6 +438,17 @@ def get_topics(rev_text):
     ldamodel = gensim.models.ldamodel.LdaModel(corpus, num_topics=10, id2word=dictionary, passes=20)
     print(datetime.datetime.now())
     print(ldamodel.print_topics(num_topics=10, num_words=10))
+
+    topics = collections.defaultdict(list)
+    for i, doc in enumerate(corpus):
+        # print(tok_array[i])
+        # print(ldamodel.get_document_topics(doc))
+        max_topic = max(ldamodel.get_document_topics(doc), key=lambda x: x[1])
+        topics[max_topic[0]].append([max_topic[1], rev_text[i]])
+    for val, top in topics.items():
+        topics[val] = sorted(top, key= lambda x: x[0], reverse=True)
+    print("RESULTS")
+    print(topics)
     return ldamodel.print_topics(num_topics=10, num_words=10)
 
 if __name__=="__main__":
@@ -383,7 +462,14 @@ if __name__=="__main__":
             "https://www.yelp.com/biz/taste-in-mediterranean-food-burlingame-2",
             "https://www.yelp.com/biz/diablos-jj-taqueria-burlingame",
             "https://www.yelp.com/biz/rasoi-restaurant-and-lounge-burlingame",
-            "https://www.yelp.com/biz/chez-maman-san-francisco-9"]
+            "https://www.yelp.com/biz/chez-maman-san-francisco-9",
+            "https://www.yelp.com/biz/alcatraz-island-san-francisco-3",
+            "https://www.yelp.com/biz/alcatraz-cruises-san-francsico",
+            "https://www.yelp.com/biz/de-young-san-francisco",
+            "https://www.yelp.com/biz/italian-homemade-company-san-francisco",
+            "https://www.yelp.com/biz/abv-san-francisco-2",
+            "https://www.yelp.com/biz/dolce-san-francisco-2",
+            "https://www.yelp.com/biz/beanas-para-siempre-rahway-2"]
     big_list = []
     for url in urls:
         big_list.extend(get_reviews_from_url(url))
@@ -397,6 +483,6 @@ if __name__=="__main__":
     # test_ml(get_reviews_from_url(big_list[0:3]))
     # for i in range(6):
     #     test_ml(get_reviews_from_url(urls[i]))
-    # copy_temp(get_reviews_from_url(urls[0]))
+    # copy_temp(get_reviews_from_url(urls[-1]))
     plt.show()
 
