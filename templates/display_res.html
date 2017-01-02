@@ -1,39 +1,9 @@
-<!DOCTYPE html>
-<!--<meta charset="utf-8">-->
-<style>
+{% extends "layout.html" %}
+{% block content %}
 
-circle {
-  fill: rgb(31, 119, 180);
-  fill-opacity: 0;
-  stroke: grey;
-  stroke-width: 1px;
-}
-
-.leaf circle {
-  fill: #ff7f0e;
-  fill-opacity: 1;
-}
-
-text {
-  font: 10px sans-serif;
-  text-anchor: middle;
-}
-
-div.tooltip {
-  position: absolute;
-  text-align: center;
-  width: 60px;
-  height: 28px;
-  padding: 2px;
-  font: 12px sans-serif;
-  background: lightsteelblue;
-  border: 0px;
-  border-radius: 8px;
-  pointer-events: none;
-}
-
-</style>
-<svg width="600" height="600"></svg>
+<!--<!DOCTYPE html>-->
+<meta charset="utf-8">
+<link rel="stylesheet" type="text/css" href="static/css/display_res.css">
 <script>
 var url = '{{ url }}';
 </script>
@@ -43,3 +13,12 @@ var url = '{{ url }}';
 <script src="https://d3js.org/d3.v4.min.js"></script>
 <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
 <script type="text/javascript" src="static/js/results.js"></script>
+<div id="page">
+  <div id="graph">
+        <svg width="500" height="500"></svg>
+  </div>
+  <div id="data">
+        <div id="table"></div>
+  </div>
+</div>
+{% endblock %}

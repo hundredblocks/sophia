@@ -1,3 +1,5 @@
+import logging
+
 import requests
 import json
 import math
@@ -45,6 +47,7 @@ def _get_review_url_for_page(url, page_number):
 
 
 def _get_review_info(page_url):
+    logging.info("getting review info for %s" % page_url)
     doc = requests.get(page_url).text
     soup = BeautifulSoup(doc, 'html.parser')
     j = soup.findAll("script", {"type": "application/ld+json"})[0].string.strip()

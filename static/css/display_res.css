@@ -1,0 +1,87 @@
+circle {
+  fill: rgb(31, 119, 180);
+  fill-opacity: 0;
+
+}
+
+.leaf circle {
+  fill: #ff7f0e;
+  fill-opacity: 1;
+}
+
+text {
+  font: 10px sans-serif;
+  text-anchor: middle;
+  fill: white;
+  font-weight:bold;
+}
+
+div.tooltip {
+  position: absolute;
+  text-align: center;
+  width: 60px;
+  height: 28px;
+  padding: 2px;
+  font: 12px sans-serif;
+  background: lightsteelblue;
+  border: 0px;
+  border-radius: 8px;
+  pointer-events: none;
+}
+
+#page{
+	position: fixed;
+	top:55px;
+	left:0;
+	right:0;
+	bottom:0;
+}
+
+#graph{
+	position: absolute;
+	width:50%;
+	top:0;
+	left:0;
+	bottom:0;
+}
+
+#data{
+	position: absolute;
+	width:50%;
+	top:0;
+	right:0;
+	bottom:0;
+}
+
+#table{
+	height:100%;
+	overflow-y: auto;
+	overflow-x: auto;
+	padding: 8px;
+	padding-bottom: 60px;
+}
+
+th, td {
+    font-size:0.8em;
+    padding-left:7px;
+    padding-right:7px;
+    padding-top:6px;
+    padding-bottom:6px;
+    vertical-align:middle;
+    text-align:left;
+}
+
+th {
+		color: #808080;
+		border-bottom: 1px solid #ccc;
+		font-size: 10px;
+		text-transform: uppercase;
+}
+
+td {
+		border-bottom: 1px solid #ccc;
+}
+
+td.rowkey {
+    text-align:left;
+}

@@ -27,13 +27,6 @@ def summary():
     # return render_template('socket_summary.html', url=request.form['reviewUrl'])
 
 
-@base_routes.route('/_add_numbers')
-def add_numbers():
-    a = request.args.get('a', 0, type=int)
-    b = request.args.get('b', 0, type=int)
-    return jsonify(result=a + b)
-
-
 @base_routes.route('/_get_summary')
 def get_sum():
     url = request.args.get('url', '', type=str)
