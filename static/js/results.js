@@ -14,7 +14,7 @@ $(function() {
         data = JSON.parse(data.result);
         setupGraph(data);
         setupFirstTable(data);
-        setupSecondTable(data[0]["GROOMED"]);
+        setupSecondTable(data[0]["GROOMED_COUNT"]);
         setupThirdTable(data[0]["CHOSEN"]);
       });
       return false;
