@@ -2,6 +2,7 @@ import logging
 import collections
 import json
 import multiprocessing
+import copy
 
 import numpy as np
 from sklearn.cluster import KMeans
@@ -126,11 +127,6 @@ def get_result(reviews, model=None):
     print(a)
     return a
 
-# def escaped(dic):
-#     escaped_dic = {}
-#     for key, value in dic.items():
-#         escaped_dic[escaped_str(key)] = esca
-
 
 def clean_clusters(cluster_arr):
     new_clus_arr = []
@@ -143,9 +139,11 @@ def clean_clusters(cluster_arr):
             # "sentences": [alldocs[ind] for ind in translated_indexes],
             "NUM_SENT": clus["NUM_SENT"],
             "PERC_REV": clus["PERC_REV"],
+            "PERC_SENT": clus["PERC_SENT"],
             "NUM_REV": clus["NUM_REV"],
             "POS_AVG": clus["POS_AVG"],
             "GROOMED": clus["GROOMED"],
+            "GROOMED_COUNT": clus["GROOMED_COUNT"],
             "groom": clus["groom"],
             "CHOSEN": clus["CHOSEN"]
         }
@@ -182,7 +180,7 @@ def pick_sentences(cluster_arr, n=2):
 def groom_counters(cluster_arr):
     glob_count = collections.Counter()
     for c in cluster_arr:
-        count = c["cluster_counter"]
+        count = copy.copy(c["cluster_counter"])
         glob_count.update(count)
     avg_count = collections.Counter()
     per_sent_freq = {}
@@ -204,6 +202,7 @@ def groom_counters(cluster_arr):
 
         clus["GROOMED"] = [val[0] for val in count.most_common(10) if val[1] != 0]
         clus["groom"] = [val for val in count.most_common(10) if val[1] != 0]
+        clus["GROOMED_COUNT"] = [ [val[0], clus["cluster_counter"][val[0]]]  for val in count.most_common(10) if val[1] != 0]
 
     for cl in cluster_arr:
         del cl["cluster_counter"]

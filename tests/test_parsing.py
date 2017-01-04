@@ -451,7 +451,8 @@ def get_topics(rev_text):
     print(topics)
     return ldamodel.print_topics(num_topics=10, num_words=10)
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     # url = "https://www.yelp.com/biz/rickhouse-san-francisco"
     url = "https://www.yelp.com/biz/antoines-cookie-shop-san-mateo-3"
     review_list = get_reviews_from_url(url)

@@ -10,7 +10,7 @@ circle {
 }
 
 text {
-  font: 10px sans-serif;
+  font: 8px sans-serif;
   text-anchor: middle;
   fill: white;
   font-weight:bold;
@@ -31,7 +31,7 @@ div.tooltip {
 
 #page{
 	position: fixed;
-	top:55px;
+	top:90px;
 	left:0;
 	right:0;
 	bottom:0;
@@ -40,7 +40,7 @@ div.tooltip {
 #graph{
 	position: absolute;
 	width:50%;
-	top:0;
+	top:50px;
 	left:0;
 	bottom:0;
 }
@@ -48,7 +48,7 @@ div.tooltip {
 #data{
 	position: absolute;
 	width:50%;
-	top:0;
+	top:20px;
 	right:0;
 	bottom:0;
 }
@@ -58,24 +58,19 @@ div.tooltip {
 	overflow-y: auto;
 	overflow-x: auto;
 	padding: 8px;
-	padding-bottom: 60px;
 }
 
 th, td {
-    font-size:0.8em;
-    padding-left:7px;
-    padding-right:7px;
-    padding-top:6px;
-    padding-bottom:6px;
+    font-size:0.7em;
     vertical-align:middle;
     text-align:left;
 }
 
 th {
-		color: #808080;
-		border-bottom: 1px solid #ccc;
-		font-size: 10px;
-		text-transform: uppercase;
+    color: #808080;
+    border-bottom: 1px solid #ccc;
+    font-size: 10px;
+    text-transform: uppercase;
 }
 
 td {

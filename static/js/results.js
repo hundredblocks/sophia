@@ -1,9 +1,9 @@
-var color_scale= d3.scaleLinear().domain([-1, -0.25, 0.25, 1]).range(['red', 'orange', 'gold', 'green']);
+var color_scale= d3.scaleLinear().domain([-1, -0.25, 0.25, 1]).range(['red', 'orange', 'lightgreen', 'green']);
 var div, thead, tbody, rows, thead2, tbody2, rows2, thead3, tbody3, rows3;
 var tableColumns = ['NUM_REV', 'NUM_SENT', 'POS_AVG']
 var columnToDisplay={
-  'NUM_REV':'Reviews On This Topic (Percent of Total)',
-  'NUM_SENT': 'Sentences On This Topic',
+  'NUM_REV':'Reviews Mentioning This Topic (Percent of Total)',
+  'NUM_SENT': 'Sentences On This Topic (Percent of Total)',
   'POS_AVG': "Average Positivity"
 };
 
@@ -52,6 +52,7 @@ function setupGraph(data){
     .style("fill", function(d) {return color_scale(d.data.POS_AVG);})
       .attr("r", function(d) { return d.r; })
       .on("mouseover", mouseover)
+      .on("click", mouseover)
     .on("mouseout", mouseout);
 
 
@@ -90,9 +91,13 @@ function setupFirstTable(data){
     tbody = table.append("tbody");
     var perc_rev = parseFloat(Math.round(data[0]["PERC_REV"] * 100) / 100).toFixed(2);
     var num_rev_str = data[0]["NUM_REV"].toString() + " ("+ perc_rev.toString()+"%)"
+
+    var perc_sent = parseFloat(Math.round(data[0]["PERC_SENT"] * 100) / 100).toFixed(2);
+    var num_sent_str = data[0]["NUM_SENT"].toString() + " ("+ perc_sent.toString()+"%)"
     var first = {
     "NUM_REV": num_rev_str,
-    "NUM_SENT": data[0].NUM_SENT,
+    "NUM_SENT": num_sent_str,
+//    "NUM_SENT": data[0].NUM_SENT,
     "POS_AVG": parseFloat(Math.round(data[0].POS_AVG * 100) / 100).toFixed(2)
     };
 
@@ -133,7 +138,7 @@ function setupSecondTable(wordArray){
     .data(["words"])
     .enter()
     .append("th")
-    .text(function(d) { return "Most Common Words"; })
+    .text(function(d) { return "Most Common Words (Number of Occurences)"; })
 
     rows2 = tbody2.selectAll("tr")
     .data([wordArray])
@@ -153,7 +158,7 @@ function getWordList(row) {
             if(i!=0){
                 answ += " - "
             }
-            answ += w;
+            answ += w[0] + " (" + w[1] + ")";
         })
         return[{column: "words",
         value: answ}]
@@ -233,15 +238,15 @@ function updateThirdTable(sentArray){
     rows3 = tbody3.selectAll("tr")
     .data(sentArray);
 
-    rows3.enter().append("tr").merge(rows);
+    rows3.enter().append("tr").merge(rows3);
     rows3.exit().remove();
 
     var cells = rows3.selectAll("td")
-    .data(function(row, i) {
+    .data(function(row) {
         return[{column: "sentence",
         value: row}]
     });
-    cells.exit().remove();
+
     cells.enter()
     .append("td")
     .merge(cells)
@@ -250,7 +255,7 @@ function updateThirdTable(sentArray){
 
 function pickCellDisplayText(d, i ){
     return d.value
-    }
+}
 
 
 function mouseover(d, i) {
@@ -258,13 +263,16 @@ function mouseover(d, i) {
         var dat = d.data;
         var perc_rev = parseFloat(Math.round(dat["PERC_REV"] * 100) / 100).toFixed(2);
         var num_rev_str = dat["NUM_REV"].toString() + " ("+ perc_rev.toString()+"%)"
+
+        var perc_sent = parseFloat(Math.round(dat["PERC_SENT"] * 100) / 100).toFixed(2);
+        var num_sent_str = dat["NUM_SENT"].toString() + " ("+ perc_sent.toString()+"%)";
         var formatted = {
         "NUM_REV": num_rev_str,
-        "NUM_SENT": dat.NUM_SENT,
+        "NUM_SENT": num_sent_str,
         "POS_AVG": parseFloat(Math.round(dat.POS_AVG * 100) / 100).toFixed(2)
         };
         updateFirstTable(formatted);
-        updateSecondTable(dat["GROOMED"]);
+        updateSecondTable(dat["GROOMED_COUNT"]);
         updateThirdTable(dat["CHOSEN"]);
     }
 
@@ -279,6 +287,13 @@ function mouseout() {
 function pickCircleDisplayText(d){
        if(d.data.name!=="total"){
        if(d.data.GROOMED.length>0){
+       if(d.data["PERC_REV"]<2){
+                return "";
+            }
+        if(d.data["PERC_REV"]<5){
+                return "...";
+            }
+
         var strResponse = "";
         var toDisp = d.data.GROOMED.length<3 ? d.data.GROOMED.length : 3;
         var sl = d.data.GROOMED.slice(0, toDisp);

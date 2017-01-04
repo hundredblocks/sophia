@@ -24,7 +24,6 @@ def index():
 def summary():
     print(request.form['reviewUrl'])
     return render_template('display_res.html', url=request.form['reviewUrl'])
-    # return render_template('socket_summary.html', url=request.form['reviewUrl'])
 
 
 @base_routes.route('/_get_summary')
