@@ -19,7 +19,7 @@ def results():
 @base_routes.route('/', methods=['GET'])
 def index():
     return render_template('index.html',
-                           base_route=c.config['web']['base_url'])
+                           base_url=c.config['web']['base_url'])
 
 
 @base_routes.route('/summary', methods=['POST'])
@@ -27,7 +27,7 @@ def summary():
     c.load()
     return render_template('display_res.html',
                            url=request.form['reviewUrl'],
-                           base_route=c.config['web']['base_url'])
+                           base_url=c.config['web']['base_url'])
 
 
 @base_routes.route('/_get_summary')
