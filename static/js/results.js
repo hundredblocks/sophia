@@ -6,9 +6,11 @@ var columnToDisplay={
   'NUM_SENT': 'Sentences On This Topic (Percent of Total)',
   'POS_AVG': "Average Positivity"
 };
-
+console.log(baseUrl);
+console.log($SCRIPT_ROOT + baseUrl + '/_get_summary');
 $(function() {
         console.log(baseUrl);
+        console.log($SCRIPT_ROOT + baseUrl + '/_get_summary');
       $.getJSON($SCRIPT_ROOT + baseUrl + '/_get_summary', {
         url: url,
       }, function(data) {
