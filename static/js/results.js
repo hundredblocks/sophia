@@ -8,6 +8,7 @@ var columnToDisplay={
 };
 
 $(function() {
+        console.log(baseUrl);
       $.getJSON($SCRIPT_ROOT + baseUrl + '/_get_summary', {
         url: url,
       }, function(data) {
