@@ -7,7 +7,8 @@ var columnToDisplay={
   'POS_AVG': "Average Positivity"
 };
 $(function() {
-      $.getJSON($SCRIPT_ROOT  + '/_get_summary', {
+    var getUrl = '/' + baseUrl + '_get_summary';
+      $.getJSON(getUrl, {
         url: url,
       }, function(data) {
         data = JSON.parse(data.result);
