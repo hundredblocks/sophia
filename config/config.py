@@ -1,7 +1,8 @@
 config = {
     'web': {
         'ip': '0.0.0.0',
-        'port': 8080
+        'port': 8080,
+        'base_url': 'sophia'
     },
     'db': {
         'name': 'sophia',

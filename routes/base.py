@@ -1,5 +1,6 @@
 import gensim
 from flask import Blueprint, render_template, request, jsonify
+import config.config as c
 
 from extractor.feature_extractor import get_result
 from parsing.parsing import get_reviews_from_url
@@ -17,13 +18,16 @@ def results():
 
 @base_routes.route('/', methods=['GET'])
 def index():
-    return render_template('index.html')
+    return render_template('index.html',
+                           base_route=c.config['base_url'])
 
 
 @base_routes.route('/summary', methods=['POST'])
 def summary():
-    print(request.form['reviewUrl'])
-    return render_template('display_res.html', url=request.form['reviewUrl'])
+    c.load()
+    return render_template('display_res.html',
+                           url=request.form['reviewUrl'],
+                           base_route=c.config['base_url'])
 
 
 @base_routes.route('/_get_summary')

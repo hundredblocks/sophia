@@ -8,7 +8,7 @@ var columnToDisplay={
 };
 
 $(function() {
-      $.getJSON($SCRIPT_ROOT + '/_get_summary', {
+      $.getJSON($SCRIPT_ROOT + baseUrl + '/_get_summary', {
         url: url,
       }, function(data) {
         data = JSON.parse(data.result);
