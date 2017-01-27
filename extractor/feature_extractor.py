@@ -5,14 +5,13 @@ import multiprocessing
 import copy
 
 import numpy as np
-from sklearn.cluster import KMeans, DBSCAN, AgglomerativeClustering
+from sklearn.cluster import KMeans
 
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer
 import gensim
 from gensim import corpora
 from gensim.models import tfidfmodel
-from sklearn.metrics.pairwise import cosine_distances, euclidean_distances
 from stop_words import get_stop_words
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
@@ -20,90 +19,42 @@ cores = multiprocessing.cpu_count()
 assert gensim.models.doc2vec.FAST_VERSION > -1
 
 
-def get_result(reviews, model=None):
+def get_result(reviews, n_c=20, model=None):
     reviews_text = [r.review['description'] for r in reviews]
-    # reviews_text = [[r.review['description'], r.review["rating"]] for r in reviews]
-    rev_nested = [nltk.tokenize.sent_tokenize(review_text) for review_text in reviews_text]
-    lines_list = [line for rev_lines in rev_nested for line in rev_lines]
-    line_to_rev = [[line, i] for i, rev_lines in enumerate(rev_nested) for line in rev_lines]
-    total_reviews = len(reviews_text)
-    print(len(reviews_text), len(rev_nested), len(lines_list))
-    alldocs = []
-    tokenizer = nltk.RegexpTokenizer(r'\w+')
     en_stop = get_stop_words('en')
-    words = []
-    for i, l in enumerate(lines_list):
-        subl = tokenizer.tokenize(l)
-        stopped_tokens = [i.lower() for i in subl if i not in en_stop]
-        words.extend(stopped_tokens)
-        alldocs.append(stopped_tokens)
-    logging.info("sentences constructed")
+    total_reviews = len(reviews_text)
+    line_to_rev, lines_list, alldocs, words = prepare_review_data(reviews_text)
 
-    dictionary = corpora.Dictionary(alldocs)
-    corpus = [dictionary.doc2bow(text) for text in alldocs]
-    tfidf = tfidfmodel.TfidfModel(corpus)
-    tfidf_scores = {dictionary.get(id): value for doc in tfidf[corpus] for id, value in doc}
-    logging.info("TFIDF computed")
+    tfidf_scores = get_tf_idf(alldocs)
 
-    sid = nltk.sentiment.SentimentIntensityAnalyzer()
-    line_scores = []
-    for rev_text in reviews_text:
-        er = nltk.tokenize.sent_tokenize(rev_text)
-        for line in er:
-            line_scores.append(sid.polarity_scores(line)["compound"])
-    logging.info("sentiments analyzed")
+    line_scores = get_sentiment_scores(reviews_text)
 
     if model is None:
         model = gensim.models.Word2Vec.load_word2vec_format('models/GoogleNews-vectors-negative300.bin', binary=True)
         logging.info("loaded")
 
-    sent_vectors = []
-    map_vec_to_str = {}
-    i = 0
-    for j, sent in enumerate(alldocs):
-        total_sent_vector = sum([model[word] * tfidf_scores[word] for word in sent if word in model.vocab])
-        if not isinstance(total_sent_vector, int):
-            map_vec_to_str[i] = j
-            total_weights = len([word for word in sent if word in model.vocab])
-            sent_vector = total_sent_vector / total_weights
-            sent_vector_with_pol = np.append(sent_vector, line_scores[j])
-            rev_index = line_to_rev[j][1]
-            sent_vector_with_pol_and_rev = np.append(sent_vector_with_pol, reviews[rev_index].review["rating"])
-            sent_vectors.append(sent_vector_with_pol_and_rev)
-            # sent_vectors.append(sent_vector_with_pol)
-            i += 1
-
+    sent_vectors, map_vec_to_str = get_sentence_vectors(alldocs, model, tfidf_scores, reviews, line_scores, line_to_rev)
     logging.info("vectors retrieved, from %s to %s" % (len(alldocs), len(sent_vectors)))
 
-    n_c = 10
-    results_dict = {}
-    km = KMeans(n_clusters=n_c, init='k-means++', max_iter=100)
-    km.fit(sent_vectors)
+    km = get_clusters(sent_vectors, n_c=n_c)
 
-    # def train_class(sen, n_c):
-    #     for a in n_c:
-    #         km = KMeans(n_clusters=a, init='k-means++', max_iter=100)
-    #         km.fit(sen)
+    cluster_summaries = get_cluster_summaries(km, sent_vectors, lines_list, alldocs, map_vec_to_str, line_to_rev,
+                                              total_reviews, en_stop, n_c=n_c)
+    sorted_summaries = sorted(cluster_summaries, key=lambda x: x["PERC_SENT"], reverse=True)
 
-    logging.info("bef")
-    # train_class(sent_vectors, n_c=[5, 10, 20])
-    logging.info("af")
-    # representative_frequency = .01
-    # min_samples = len(sent_vectors)*representative_frequency
+    groom_counters(sorted_summaries)
+    pick_sentences(sorted_summaries, n=5)
+    clean_summaries = clean_clusters(sorted_summaries)
 
-    # EPS: 0.001 good results but a bit too selective perhaps?
-    # km = DBSCAN(eps=0.0013, min_samples=min_samples, metric='cosine', algorithm='brute')
-    # km = DBSCAN(eps=0.001, min_samples=5, metric='cosine', algorithm='brute')
-    # km.fit(sent_vectors)
+    json_result = json.dumps(clean_summaries)
+    logging.info(json_result)
+    return json_result
 
-    # km = AgglomerativeClustering(n_clusters=n_c, affinity='cosine', linkage='average')
-    # km = AgglomerativeClustering(n_clusters=n_c)
-    # km.fit(sent_vectors)
-    # n_c = len(set(km.labels_)) - (1 if -1 in km.labels_ else 0)
-    logging.info("Clustered in %s clusters" % n_c)
 
+def get_cluster_summaries(km, sent_vectors, lines_list, alldocs, map_vec_to_str, line_to_rev, total_reviews, en_stop,
+                          n_c=20):
     word_counter = collections.Counter()
-    cluster_config_arr = []
+    cluster_summaries = []
     for cluster in range(n_c):
         member_indexes = [memb[0] for memb in enumerate(km.labels_) if memb[1] == cluster]
         size_num = len(member_indexes)
@@ -140,30 +91,79 @@ def get_result(reviews, model=None):
             "NUM_REV": num_reviews,
             "POS_AVG": avg_positivity
         }
-        cluster_config_arr.append(cluster_res)
-    sorted_result = sorted(cluster_config_arr, key=lambda x: x["PERC_SENT"], reverse=True)
+        cluster_summaries.append(cluster_res)
+    return cluster_summaries
 
-    # In the response we send cluster_id, groomed_words, positivity, num_reviews, perc_rev and one/two sentences
-    groom_counters(sorted_result)
-    pick_sentences(sorted_result, n=5)
-    clean = clean_clusters(sorted_result)
 
-    print("RESULTS")
-    print(clean)
-    a = json.dumps(clean)
-    print(a)
-    return a
+def get_clusters(sent_vectors, n_c=20):
+    km = KMeans(n_clusters=n_c, init='k-means++', max_iter=100)
+    km.fit(sent_vectors)
+    logging.info("Clustered in %s clusters" % n_c)
+    return km
+
+
+def get_sentence_vectors(alldocs, model, tfidf_scores, reviews, line_scores, line_to_rev):
+    sent_vectors = []
+    map_vec_to_str = {}
+    i = 0
+    for j, sent in enumerate(alldocs):
+        total_sent_vector = sum([model[word] * tfidf_scores[word] for word in sent if word in model.vocab])
+        if not isinstance(total_sent_vector, int):
+            map_vec_to_str[i] = j
+            total_weights = len([word for word in sent if word in model.vocab])
+            sent_vector = total_sent_vector / total_weights
+            sent_vector_with_pol = np.append(sent_vector, line_scores[j])
+            rev_index = line_to_rev[j][1]
+            sent_vector_with_pol_and_rev = np.append(sent_vector_with_pol, reviews[rev_index].review["rating"])
+            sent_vectors.append(sent_vector_with_pol_and_rev)
+            i += 1
+    return sent_vectors, map_vec_to_str
+
+
+def get_tf_idf(alldocs):
+    dictionary = corpora.Dictionary(alldocs)
+    corpus = [dictionary.doc2bow(text) for text in alldocs]
+    tfidf = tfidfmodel.TfidfModel(corpus)
+    tfidf_scores = {dictionary.get(id): value for doc in tfidf[corpus] for id, value in doc}
+    logging.info("TFIDF computed")
+    return tfidf_scores
+
+
+def get_sentiment_scores(reviews_text):
+    sid = nltk.sentiment.SentimentIntensityAnalyzer()
+    line_scores = []
+    for rev_text in reviews_text:
+        er = nltk.tokenize.sent_tokenize(rev_text)
+        for line in er:
+            line_scores.append(sid.polarity_scores(line)["compound"])
+    logging.info("sentiments analyzed")
+    return line_scores
+
+
+def prepare_review_data(reviews_text):
+    rev_nested = [nltk.tokenize.sent_tokenize(review_text) for review_text in reviews_text]
+    lines_list = [line for rev_lines in rev_nested for line in rev_lines]
+    line_to_rev = [[line, i] for i, rev_lines in enumerate(rev_nested) for line in rev_lines]
+    total_reviews = len(reviews_text)
+    logging.info("%s reviews, %s lines" % (total_reviews, len(lines_list)))
+    alldocs = []
+    tokenizer = nltk.RegexpTokenizer(r'\w+')
+    en_stop = get_stop_words('en')
+    words = []
+    for i, l in enumerate(lines_list):
+        subl = tokenizer.tokenize(l)
+        stopped_tokens = [i.lower() for i in subl if i not in en_stop]
+        words.extend(stopped_tokens)
+        alldocs.append(stopped_tokens)
+    logging.info("sentences constructed")
+    return line_to_rev, lines_list, alldocs, words
 
 
 def clean_clusters(cluster_arr):
     new_clus_arr = []
     for clus in cluster_arr:
         new_clus = {
-            # "CLOSEST": [lines_list[c] for c in closest_idx] if len(closest_idx) > 0 else 0,
-            # "MOST COMMON": cluster_counter.most_common(10),
             "ID": clus["ID"],
-            # "cluster_counter": cluster_counter,
-            # "sentences": [alldocs[ind] for ind in translated_indexes],
             "NUM_SENT": clus["NUM_SENT"],
             "PERC_REV": clus["PERC_REV"],
             "PERC_SENT": clus["PERC_SENT"],
