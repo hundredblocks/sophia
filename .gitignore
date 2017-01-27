@@ -1,6 +1,6 @@
 *.idea/*
 *.csv
-**/config.py
+config/config.py
 **/*.pyc
 **/*.DS_Store
 *.iml

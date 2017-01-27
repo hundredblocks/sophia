@@ -80,13 +80,13 @@ def get_result(reviews, model=None):
     km = KMeans(n_clusters=n_c, init='k-means++', max_iter=100)
     km.fit(sent_vectors)
 
-    def train_class(sen, n_c):
-        for a in n_c:
-            km = KMeans(n_clusters=a, init='k-means++', max_iter=100)
-            km.fit(sen)
+    # def train_class(sen, n_c):
+    #     for a in n_c:
+    #         km = KMeans(n_clusters=a, init='k-means++', max_iter=100)
+    #         km.fit(sen)
 
     logging.info("bef")
-    train_class(sent_vectors, n_c=[5, 10, 20])
+    # train_class(sent_vectors, n_c=[5, 10, 20])
     logging.info("af")
     # representative_frequency = .01
     # min_samples = len(sent_vectors)*representative_frequency
